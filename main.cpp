@@ -6,8 +6,12 @@ using namespace std;
 
 int main()
 {
+    string path = "/home/xayc/CERN/data/spectrums/specEN_";
     EnergyProccessing obj;
-    obj.EnergyRecovery();
-    //obj.EnergyDist("p");
+    obj.ParsingFileEn(path);
+    //obj.EnergyDist();
+    //obj.EnergyRecovery();
+    obj.EnergyCoef();
+
     return 0;
 }
