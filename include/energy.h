@@ -3,22 +3,24 @@
 #include<vector>
 #include<map>
 using namespace std;
-class EnergyProccessing
+class RootProccessing
 {
 private:
     vector<string> enName = {"100GeV", "1TeV", "10TeV", "100TeV"};
-    vector<string> particleName = {"p","c", "he", "fe"};
-    vector<double> logEn={-1, 0, 1, 2};
-    vector<double> enPrimary={0.1, 1, 10, 100};
+    vector<string> particleName = {"p", "he", "c", "fe"};
+    vector<double> logEn={2, 3, 4, 5};
+    vector<double> enPrimary = {100, 1000,10000, 100000};
     map<string,vector<vector<double>>> specData;
 
 public:
-    EnergyProccessing();
-    ~EnergyProccessing(){}
+    RootProccessing();
+    ~RootProccessing(){}
     void ParsingFileEn (string);
     void EnergyDist();
     void EnergyRecovery();
-    void EnergySpectrum();
+    void EnergySpectrum(string);
     void EnergyCoef();
+    void ZRCSpectrum(string);
+    static void ReadZ(ifstream &, vector<double> &);
 
 };

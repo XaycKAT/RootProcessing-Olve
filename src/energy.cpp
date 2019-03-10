@@ -16,17 +16,18 @@
 #include <TPaveStats.h>
 #include <TROOT.h>
 using namespace std;
-EnergyProccessing::EnergyProccessing()
+RootProccessing::RootProccessing()
 {
 
 }
 
-void EnergyProccessing::ParsingFileEn(string path)
+void RootProccessing::ParsingFileEn(string path)
 {
-    for (int k = 0; k < 4; k++)
+    path = path + "specEN_";
+    for (unsigned int k = 0; k < particleName.size(); k++)
     {
         vector<vector<double>> envec;
-        for (int i = 0; i < 4; i++)
+        for (unsigned int i = 0; i < enName.size(); i++)
         {
             ifstream file((path+particleName[k]+'_'+enName[i]+".dat").c_str(), ifstream::binary);
             if (!file.is_open())
@@ -41,23 +42,25 @@ void EnergyProccessing::ParsingFileEn(string path)
                 vecde.push_back(de);
             }
             envec.push_back(vecde);
+            file.close();
         }
         specData.insert(pair<string,vector<vector<double>>>(particleName[k],envec));
 
     }
-}
-void EnergyProccessing::EnergyDist()
-{
-    TApplication tapp("Test", 0, nullptr);
 
-    for(int k = 0; k < particleName.size(); k++)
+}
+void RootProccessing::EnergyDist()
+{
+    // TApplication tapp("Test", 0, nullptr);
+
+    for(unsigned int k = 0; k < particleName.size(); k++)
     {
-        TH1D *enHist[4];
-        for (int i = 0; i< 4; i++)
+        TH1D *enHist[enName.size()];
+        for (unsigned int i = 0; i < enName.size(); i++)
         {
             enHist[i] = new TH1D("value", ("Energy distribution " + particleName[k]).c_str() ,  100,0,10);
         }
-        for(int i = 0; i < 4; i++)
+        for(unsigned int i = 0; i < enName.size(); i++)
         {
             auto enVec = specData.at(particleName[k]);
             for(auto el : enVec[i])
@@ -65,7 +68,7 @@ void EnergyProccessing::EnergyDist()
 
         }
 
-        for(int j = 0; j < 4; j++)
+        for(unsigned int j = 0; j < enName.size(); j++)
         {
             for (int i = 1;i <= 100;i++)
             {
@@ -82,8 +85,8 @@ void EnergyProccessing::EnergyDist()
 
         enHist[0]->SetLineColor(kBlack);
         enHist[0]->Draw();
-        enHist[0]->GetXaxis()->SetTitle("lg(dE), lg(MeV)");
-        enHist[0]->GetYaxis()->SetTitle("Number of events");
+        enHist[0]->GetXaxis()->SetTitle("lg dE , lg MeV");
+        enHist[0]->GetYaxis()->SetTitle("Normalized NOE");
 
         enHist[1]->SetLineStyle(2);
         enHist[1]->SetLineColor(kBlack);
@@ -105,14 +108,13 @@ void EnergyProccessing::EnergyDist()
         c1.SetGridy();
         //c1.SetLogx();
         //c1.SetLogy();
-        c1.Print(("/home/xayc/CERN/data/graph/specEN_"+particleName[k]+".pdf").c_str());
+        c1.Print(("/home/xayc/CERN/data/graph/"+particleName[k]+"/specEN_"+particleName[k]+".pdf").c_str());
     }
     //tapp.Run();
 }
-
-void EnergyProccessing::EnergyRecovery()
+void RootProccessing::EnergyRecovery()
 {
-    TApplication tapp("Test", 0, nullptr);
+    //TApplication tapp("Test", 0, nullptr);
 
     for(int k = 0; k < 4 ; k++)
     {
@@ -122,8 +124,6 @@ void EnergyProccessing::EnergyRecovery()
         for(int i = 0; i < 4; i++)
         {
             double en=0;
-            double d1=0;
-            double d2=0;
             int j=0;
 
             auto enVec = specData.at(particleName[k]);
@@ -131,8 +131,7 @@ void EnergyProccessing::EnergyRecovery()
             {
                 en+=log10(el);
                 j++;
-                d1 += pow(el/enPrimary[i],2.6);
-                d2 += pow(el/enPrimary[i],1.6);
+
             }
 
             en/=static_cast<double>(j);
@@ -140,27 +139,27 @@ void EnergyProccessing::EnergyRecovery()
             enEmissionY.push_back(logEn[i]);
         }
 
-
+        
         TGraph *gr = new TGraph (enEmissionX.size(), enEmissionX.data(), enEmissionY.data());
         TCanvas c ("test", "test");
         gr->SetTitle(("Energy Recovery "+particleName[k]).c_str());
-        gr->GetXaxis()->SetTitle("lg(dE), lg(MeV)");
-        gr->GetYaxis()->SetTitle("lg(E_0), lg(MeV)");
+        gr->GetXaxis()->SetTitle("lg dE, lg MeV ");
+        gr->GetYaxis()->SetTitle("lg E_{0}, lg MeV ");
         gr->SetMarkerStyle(8);
         gr->Fit("pol1");
-        gr->Draw("AP");
         gROOT->SetStyle("Plain");
         gStyle->SetOptFit(11);
+        gr->Draw("AP");
+
+        c.Update();
         c.SetGridx();
-        c.Print(("~/CERN/data/graph/enRecovery_"+particleName[k]+".pdf").c_str());
-
-
+        c.Modified();
+        c.Print(("~/CERN/data/graph/"+particleName[k]+"/enRecovery_"+particleName[k]+".pdf").c_str());
         //tapp.Run();
     }
 
 }
-
-void EnergyProccessing::EnergyCoef()
+void RootProccessing::EnergyCoef()
 {
     for(int k = 0; k < 4 ; k++)
     {
@@ -169,35 +168,148 @@ void EnergyProccessing::EnergyCoef()
         {
             double d1=0;
             double d2=0;
-            int j=0;
 
             auto enVec = specData.at(particleName[k]);
             for(auto el : enVec[i])
             {
-                j++;
                 d1 += pow(el/enPrimary[i],2.6);
                 d2 += pow(el/enPrimary[i],1.6);
             }
 
-            coef.push_back(1./d2*d1);
+            coef.push_back(d1/d2);
 
         }
 
 
-        TGraph *gr1 = new TGraph (coef.size(), enPrimary.data(), coef.data());
-        TCanvas c1 ("test", "test");
+        TGraph *gr = new TGraph (coef.size(), logEn.data(), coef.data());
+        TCanvas c ("test", "test");
+        //c.SetLogx();
+        c.SetGridy();
+        gr->SetTitle(("Artificial coefficient "+particleName[k]).c_str());
+        gr->SetMarkerStyle(8);
+        gr->GetXaxis()->SetTitle("lg E, lg MeV");
+        gr->GetYaxis()->SetTitle("E (dN/dE)");
         gROOT->SetStyle("Plain");
+        gr->Fit("pol1");
         gStyle->SetOptFit(11);
-        gr1->Draw("APL");
-        gr1->SetMarkerStyle(8);
-        gr1->SetTitle(("Artificial coefficient "+particleName[k]).c_str());
-        gr1->GetXaxis()->SetTitle("E, TeV");
-        gr1->GetYaxis()->SetTitle("E (dN/dE)");
-        c1.SetLogx();
-        c1.SetGridy();
-        c1.Print(("~/CERN/data/graph/coef_"+particleName[k] +".pdf").c_str());
+        gr->Draw("AP");
+        c.Update();
+        c.Print(("~/CERN/data/graph/"+particleName[k]+"/coef_"+particleName[k] +".pdf").c_str());
         coef.clear();
     }
 }
+void RootProccessing::EnergySpectrum(string path)
+{
+    path = path + "specEN_";
+    for(unsigned int k = 0; k < particleName.size(); k++)
+    {
+        ifstream file((path+particleName[k]+"_sp.dat").c_str(), ifstream::binary);
+        if (!file.is_open())
+        {
+            cout << "file can not be opened, or it does not exist " << endl;
+            exit(EXIT_FAILURE);
+        }
+        TH1D *enHist = new TH1D("value", ("Energy distribution of uniform " + particleName[k]).c_str() ,  100,2,8);
+        double de=0;
+        while(file.read((char*)&de,sizeof (de)))
+            enHist->Fill(log10(de));
+
+        for (int i = 1;i <= 100;i++)
+        {
+            int sum = enHist->GetBinContent(i);
+            double cen = enHist->GetBinCenter(i);
+            enHist->SetBinContent(i,sum/10000./cen);
+        }
+        TCanvas c1 ("test", "test");
+
+        enHist->SetLineColor(kBlack);
+        enHist->Draw();
+        enHist->GetXaxis()->SetTitle("lg dE , lg MeV");
+        enHist->GetYaxis()->SetTitle("Normalized NOE");
+        c1.SetGridy();
+        c1.Print(("/home/xayc/CERN/data/graph/"+particleName[k]+"/specEN_"+particleName[k]+"_sp.pdf").c_str());
+
+    }
+
+}
+
+void RootProccessing::ReadZ(ifstream &file, vector<double> &vec)
+{
+    for(int i = 0; i < 7; i ++)
+    {
+        double z = 0;
+        file.read((char*)&z,sizeof (z));
+        vec.push_back(z);
+    }
+}
+void RootProccessing::ZRCSpectrum(string path)
+{
+    path = path + "specZRC_";
+    vector<string> zName = enName;
+    zName.push_back("sp");
+    for(unsigned int k = 0; k < particleName.size(); k++)
+    {
+        for (unsigned int i = 0; i < zName.size(); i++)
+        {
+            ifstream file((path+particleName[k]+'_'+zName[i]+".dat").c_str(), ifstream::binary);
+            if (!file.is_open())
+            {
+                cout << "file can not be opened, or it does not exist " << endl;
+                exit(EXIT_FAILURE);
+            }
+            TH1D *zHist;
+            TH1D *zwHist;
+            TH1D *rcHist;
+            if( k == 0 || k == 1)
+            {
+                zHist = new TH1D("value", ("Z distribution of " + particleName[k]+" " +zName[i]).c_str() ,  60,0,4);
+                zwHist = new TH1D("value", ("Z distribution of " + particleName[k]+" " +zName[i]).c_str() ,  60,0,4);
+                rcHist = new TH1D("value", ("RC distribution of " + particleName[k]+" " +zName[i]).c_str() ,  60,0,4);
+
+            }
+            if( k == 2)
+            {
+                zHist = new TH1D("value", ("Z distribution of " + particleName[k]+" " +zName[i]).c_str() ,  60,4,8);
+                zwHist = new TH1D("value", ("Z distribution of " + particleName[k]+" " +zName[i]).c_str() ,  60,4,8);
+                rcHist = new TH1D("value", ("RC distribution of " + particleName[k]+" " +zName[i]).c_str() ,  60,4,8);
+
+            }
+            if( k == 3)
+            {
+                zHist = new TH1D("value", ("Z distribution of " + particleName[k]+" " +zName[i]).c_str() ,  60,20,50);
+                zwHist = new TH1D("value", ("Z distribution of " + particleName[k]+" " +zName[i]).c_str() ,  60,20,50);
+                rcHist = new TH1D("value", ("RC distribution of " + particleName[k]+" " +zName[i]).c_str() ,  100,100,150);
+
+            }
+            double zwn = 0;
+            double zwon = 0;
+            double rc = 0;
+            while(file.read((char*)&zwn,sizeof (zwn)))
+            {
+                file.read((char*)&zwon,sizeof (zwon));
+                file.read((char*)&rc,sizeof (rc));
+                zHist->Fill(zwn);
+                zwHist->Fill(zwon);
+                rcHist->Fill(rc);
+            }
+            TCanvas c ( "test", "test" );
+            zHist->SetLineStyle(2);
+            zHist->GetXaxis()->SetTitle("Z");
+            zHist->Draw();
+            zwHist->Draw("SAME");
+            TLegend *legend = new TLegend(0.78,0.7,0.98,0.95);
+            legend->AddEntry(zHist, "Z value with projection");
+            legend->AddEntry(zwHist, "Z value without projection");
+            legend->Draw();
+            c.SetGridx();
+            c.SaveAs(("/home/xayc/CERN/data/graph/"+particleName[k]+"/specZ_"+particleName[k]+"_"+zName[i]+".pdf").c_str());
+            TCanvas c1 ( "test", "test" );
+            rcHist->GetXaxis()->SetTitle("RC, MeV");
+            rcHist->Draw();
+            c1.SetGrid();
+            c1.SaveAs(("/home/xayc/CERN/data/graph/"+particleName[k]+"/specRC_"+particleName[k]+"_"+zName[i]+".pdf").c_str());
 
 
+        }
+    }
+}
