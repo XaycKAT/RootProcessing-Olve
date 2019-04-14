@@ -9,8 +9,8 @@ int main()
     string path = "/home/xayc/CERN/data/spectrums/";
     RootProccessing obj;
     obj.ParsingFileEn(path);
-    obj.EnergyDist();
-//    obj.EnergyRecovery();
+    //obj.EnergyDist();
+    //obj.EnergyRecovery();
     obj.EnergyCoef();
     obj.ZRCSpectrum(path);
     return 0;
